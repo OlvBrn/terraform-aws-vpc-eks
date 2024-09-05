@@ -1,0 +1,42 @@
+# You can override the included template(s) by including variable overrides
+# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
+# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/pipeline/#customization
+# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
+# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
+# Note that environment variables can be set in several places
+# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
+
+stages:
+  - validate
+  - test
+  - build
+  - deploy
+  - cleanup
+
+include:
+  - template: Terraform/Base.latest.gitlab-ci.yml
+  - template: Jobs/SAST-IaC.latest.gitlab-ci.yml
+
+default:
+  before_script: apk add --update bash jq
+
+# variables:
+#   # x prevents TF_STATE_NAME from beeing empty for non environment jobs like validate
+#   # wait for https://gitlab.com/groups/gitlab-org/-/epics/7437 to use variable defaults
+#   TF_STATE_NAME: x${CI_ENVIRONMENT_NAME}
+#   TF_CLI_ARGS_plan: "-var-file=vars/${CI_ENVIRONMENT_NAME}.tfvars"
+
+fmt:
+  extends: .terraform:fmt
+
+validate:
+  extends: .terraform:validate
+
+plan:
+  extends: .terraform:build
+
+apply:
+  extends: .terraform:deploy
+
+destroy:
+  extends: .terraform:destroy
